@@ -12,14 +12,25 @@ VAR=@VAR_DIR@
 BIN=@BIN_DIR@
 SBIN=@SBIN_DIR@
 
-# Source function library.
+# Legacy compatibility helper for old SysV-init hosts.
+unsupported_host() {
+	echo "Legacy SysV init helper requires /etc/rc.d/init.d/functions." >&2
+	echo "Use systemd instead: systemctl start iserverd.service" >&2
+	exit 1
+}
+
+# Source function library when present.
+[ -r /etc/rc.d/init.d/functions ] || unsupported_host
 . /etc/rc.d/init.d/functions
 
-# Get config.
-. /etc/sysconfig/network
+# Get network config when present.
+NETWORKING="yes"
+if [ -r /etc/sysconfig/network ] ; then
+	. /etc/sysconfig/network
+fi
 
 # Check that networking is up.
-[ ${NETWORKING} = "no" ] && exit 0
+[ "${NETWORKING}" = "no" ] && exit 0
 
 [ -f ${SBIN}/iserverd ] || exit 0 
 
@@ -33,6 +44,7 @@ fi
 
 RETVAL=0
 prog="iserverd"
+LOCKFILE="/var/lock/subsys/iserverd"
 
 start() {
 	# Check database (and create it if need)
@@ -42,7 +54,9 @@ start() {
 	daemon --user iserverd ${SBIN}/iserverd
 	RETVAL=$?
 	echo
-	[ $RETVAL -eq 0 ] && touch /var/lock/subsys/iserverd
+	if [ $RETVAL -eq 0 ] && [ -d "$(dirname "$LOCKFILE")" ] ; then
+		touch "$LOCKFILE"
+	fi
 }
 
 stop() {
@@ -50,10 +64,12 @@ stop() {
 	echo @ECHO_N@ $"Shutting down $prog: "
         [ -f ${VAR}/iserverd.pid ] && \
 	    kill -TERM `cat ${VAR}/iserverd.pid` && success || failure
-        RETVAL=$?
+	RETVAL=$?
         echo
         rm -f ${VAR}/iserverd.pid
-        [ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/iserverd
+	if [ $RETVAL -eq 0 ] ; then
+		rm -f "$LOCKFILE"
+	fi
 }
 
 # See how we were called.
@@ -71,7 +87,7 @@ case "$1" in
 	RETVAL=$?
 	;;
   condrestart)
-        if [ -f /var/lock/subsys/iserverd ]; then
+        if [ -f "$LOCKFILE" ]; then
             stop
             start
             RETVAL=$?
@@ -87,4 +103,3 @@ case "$1" in
 esac
 
 exit $RETVAL
-
