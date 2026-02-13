@@ -120,6 +120,27 @@ Legacy SysV startup helpers (`script/iserverd.sh.asp.in`) are packaged only when
 explicit legacy packaging options are enabled for distributions that still provide
 `/etc/rc.d/init.d/functions`.
 
+`iserverd.service` does not hard-require a specific PostgreSQL unit by default.
+This is intentional because distributions often use different unit names
+(`postgresql.service`, `postgresql-15.service`, etc.), and remote/external DB
+deployments may not have a local PostgreSQL unit at all. Ensure database
+readiness in deployment automation before starting IServerd, and rely on
+application-level reconnect/readiness behavior during startup.
+
+If you do manage PostgreSQL locally and know the exact unit name, add a
+systemd drop-in with explicit ordering/dependency, for example:
+
+```ini
+# /etc/systemd/system/iserverd.service.d/db-unit.conf
+[Unit]
+Wants=postgresql-15.service
+After=postgresql-15.service
+```
+
+Optional distro override: set `ISERVERD_DB_UNIT` in `/etc/default/iserverd`
+to your DB unit name to get an early startup warning when that unit is not
+active.
+
 WARNING: IServerd will write all important log data to syslog.
 Debug.log is for debugging only. If you can't run it - look into your
 syslog - probably iserverd have problem with database, config or interfaces.

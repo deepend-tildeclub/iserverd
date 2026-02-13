@@ -84,6 +84,23 @@ i386, а под <ver> -- версия программного продукта,
 На современных Linux-дистрибутивах поддерживаемый способ запуска -- systemd:
   systemctl enable --now iserverd.service
 
+Важно: `iserverd.service` по умолчанию не содержит жесткой привязки к конкретному
+postgresql unit. Это сделано специально: имя unit зависит от дистрибутива
+(`postgresql.service`, `postgresql-15.service` и т.п.), а БД может быть внешней.
+Готовность БД следует обеспечивать на уровне деплоя (orchestration/automation),
+а на уровне приложения полагаться на retry/readiness-поведение при старте.
+
+Если PostgreSQL запускается локально и имя unit известно, добавьте drop-in
+с явным порядком запуска, например:
+
+  /etc/systemd/system/iserverd.service.d/db-unit.conf
+  [Unit]
+  Wants=postgresql-15.service
+  After=postgresql-15.service
+
+Дополнительно можно задать `ISERVERD_DB_UNIT` в `/etc/default/iserverd` для
+раннего предупреждения при старте, если указанный DB unit не активен.
+
 Важно: для systemd-юнита с `Type=simple` сервер должен работать в foreground-режиме,
 поэтому в `/etc/iserverd/iserv.conf` необходимо указать:
   Server mode = STANDALONE

@@ -1,15 +1,23 @@
 [Unit]
 Description=Iserver - ICQ compatible server for groups of users
 Documentation=https://web.archive.org/web/20211127054413/http://iserverd.khstu.ru/
-Requires=postgresql.service
-After=postgresql.service 
+# Keep DB dependency optional by default. If your deployment manages a known
+# PostgreSQL unit, add a drop-in with explicit Wants=/After= for that unit.
 
 [Service]
 Type=simple
 User=iserverd
 WorkingDirectory=/etc/iserverd
+<<<<<<< ours
 RuntimeDirectory=iserverd
 RuntimeDirectoryMode=0755
+=======
+EnvironmentFile=-/etc/default/iserverd
+# Optional distro override: set ISERVERD_DB_UNIT (for example
+# postgresql.service or postgresql-15.service) to emit an early warning when
+# the configured DB unit is not active at startup.
+ExecStartPre=/bin/sh -ec 'if [ -n "${ISERVERD_DB_UNIT:-}" ] && ! /bin/systemctl is-active --quiet "${ISERVERD_DB_UNIT}"; then echo "Warning: ${ISERVERD_DB_UNIT} is not active; iserverd will rely on DB reconnect/readiness behavior." >&2; fi'
+>>>>>>> theirs
 # Run in foreground for systemd (Server mode = STANDALONE in iserv.conf)
 ExecStart=/usr/bin/iserverd -c /etc/iserverd/iserv.conf -d /tmp/iserverd_debug.log
 #Restart=on-abnormal
