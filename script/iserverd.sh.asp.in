@@ -2,6 +2,8 @@
 #
 # iserverd		Groupware ICQ server clone
 #
+# LEGACY SysV init helper template (script/iserverd.sh.asp.in).
+# Not used by default deployments; systemd unit iserverd.service is preferred.
 # chkconfig: 345 95 05
 # description: Groupware ICQ Server clone
 # processname: iserverd
@@ -44,7 +46,7 @@ fi
 
 RETVAL=0
 prog="iserverd"
-LOCKFILE="/var/lock/subsys/iserverd"
+LOCKFILE="${VAR}/iserverd.pid"
 
 start() {
 	# Check database (and create it if need)
@@ -54,9 +56,6 @@ start() {
 	daemon --user iserverd ${SBIN}/iserverd
 	RETVAL=$?
 	echo
-	if [ $RETVAL -eq 0 ] && [ -d "$(dirname "$LOCKFILE")" ] ; then
-		touch "$LOCKFILE"
-	fi
 }
 
 stop() {
@@ -67,9 +66,6 @@ stop() {
 	RETVAL=$?
         echo
         rm -f ${VAR}/iserverd.pid
-	if [ $RETVAL -eq 0 ] ; then
-		rm -f "$LOCKFILE"
-	fi
 }
 
 # See how we were called.

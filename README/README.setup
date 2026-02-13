@@ -88,10 +88,11 @@ i386, а под <ver> -- версия программного продукта,
 поэтому в `/etc/iserverd/iserv.conf` необходимо указать:
   Server mode = STANDALONE
 
-Старый SysV init-скрипт
-  /etc/rc.d/init.d/iserverd start
-оставлен только для legacy-систем и может не работать на хостах без
-совместимого окружения (/etc/rc.d/init.d/functions).
+Старый SysV init-скрипт (`script/iserverd.sh.asp.in`, устанавливается как
+`/etc/rc.d/init.d/iserverd`) считается legacy-артефактом и должен включаться
+только отдельной опцией сборки legacy-пакета. На обычных установках его
+использование не требуется и не поддерживается; также он может не работать на
+дистрибутивах без `/etc/rc.d/init.d/functions`.
 
 Смотрим параллельно в
   /var/log/messages

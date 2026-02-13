@@ -20,8 +20,10 @@ BIN_SCRIPT  =  iserver_db_manage.sh \
 DB_SCRIPT   =  iserver_icquser
 DB_SUPP     =  icquser.sql
 
-ALL_SCRIPT  =  iserverd.sh \
-	       iserverd.sh.asp 
+ALL_SCRIPT  =  iserverd.sh
+
+# iserverd.sh.asp is a legacy SysV helper and is not installed by default.
+LEGACY_SCRIPT =  iserverd.sh.asp
 
 all: 
 	@echo "Nothing to do in scripts"
@@ -30,7 +32,7 @@ clean:
 	@echo "Cleaning in scripts"
 
 distclean: 
-	@list='$(ALL_SCRIPT)'; for p in $$list; do \
+	@list='$(ALL_SCRIPT) $(LEGACY_SCRIPT)'; for p in $$list; do \
 	  if test -f $$p; then \
 	    echo "Deleting script $$p"; \
 	    rm -rf $$p ; \

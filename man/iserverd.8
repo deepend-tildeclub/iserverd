@@ -70,6 +70,16 @@ Set the config filename
 .TP
 .B \-p <port>
 Listen on the specified port
+.SH STARTUP
+On Linux distributions with systemd, service management is provided by
+.BR iserverd.service (5)
+and this is the default deployment path.
+.Pp
+The legacy SysV helper template
+.B script/iserverd.sh.asp.in
+is intended for compatibility packaging only and may require distribution-
+specific SysV helper libraries (for example
+.BR /etc/rc.d/init.d/functions ).
 .SH FILES
 .PD 0
 .B /etc/iserverd/iserv.conf

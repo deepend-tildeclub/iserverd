@@ -18,6 +18,7 @@ URL: http://iserverd.khstu.ru
 %define	_with_name	iserverd
 %define _with_uid	81
 %{!?_unitdir:%define _unitdir /usr/lib/systemd/system}
+%bcond_without legacy_sysv
 
 %description
 IServerd is a Groupware ICQ server clone.
@@ -27,8 +28,10 @@ Groupware ICQ server on a unix box. No reverse engineering or decompilation
 of any Mirabilis code took place to make this program.
 
 Startup on modern Linux systems is supported via systemd
-(iserverd.service). The SysV init script is installed for legacy systems
-only.
+(iserverd.service) and this package enables the unit by default.
+Legacy SysV init support can be added only when building with
+--with legacy_sysv and is intended for distributions that still ship
+/etc/rc.d/init.d/functions.
 
 %prep
 %setup -q
@@ -56,9 +59,11 @@ install -m644 script/iserverd.logrotate $RPM_BUILD_ROOT/etc/logrotate.d/iserverd
 # systemd unit (preferred startup method)
 mkdir -p $RPM_BUILD_ROOT%{_unitdir}
 install -m644 iserverd.service $RPM_BUILD_ROOT%{_unitdir}/iserverd.service
+%if %{with legacy_sysv}
 # legacy SysV service script
 mkdir -p $RPM_BUILD_ROOT/etc/rc.d/init.d
 install -m755 script/iserverd.sh.asp $RPM_BUILD_ROOT/etc/rc.d/init.d/iserverd
+%endif
 
 # rename config files
 for i in $RPM_BUILD_ROOT%{_sysconfdir}/%{_with_name}/*.conf.default; do
@@ -79,8 +84,10 @@ rm -rf $RPM_BUILD_ROOT
 %post
 if [ -x /bin/systemctl ]; then
     /bin/systemctl daemon-reload > /dev/null 2>&1 || :
+    /bin/systemctl preset iserverd.service > /dev/null 2>&1 || \
+        /bin/systemctl enable iserverd.service > /dev/null 2>&1 || :
     echo "IServerd startup is managed by systemd (iserverd.service)."
-    echo "Run: systemctl enable --now iserverd.service"
+    echo "Systemd unit enabled. Run: systemctl start iserverd.service"
 fi
 cp /etc/services /etc/services.iserverd
 cat /etc/services.iserverd | egrep -v "^icq" > /etc/services
@@ -97,10 +104,12 @@ fi
 if [ -f /var/run/iserverd/iserverd.pid ]; then
     if [ -x /bin/systemctl ]; then
 	/bin/systemctl stop iserverd.service > /dev/null 2>&1 || :
+%if %{with legacy_sysv}
     elif [ -e /sbin/service ]; then
 	/sbin/service iserverd stop > /dev/null
     else
 	/etc/rc.d/init.d/iserverd stop > /dev/null
+%endif
     fi
 fi
 
@@ -114,10 +123,12 @@ fi
 if [ "$1" -ge "1" ]; then
     if [ -x /bin/systemctl ]; then
         /bin/systemctl try-restart iserverd.service > /dev/null 2>&1 || :
+%if %{with legacy_sysv}
     elif [ -e /sbin/service ]; then
         /sbin/service iserverd condrestart > /dev/null 2>&1
     else
 	/etc/rc.d/init.d/iserverd condrestart > /dev/null 2>&1
+%endif
     fi
 fi
 
@@ -127,7 +138,9 @@ fi
 %doc doc
 /etc/logrotate.d/iserverd
 %{_unitdir}/iserverd.service
+%if %{with legacy_sysv}
 %attr(755,root,root) /etc/rc.d/init.d/iserverd
+%endif
 %{_mandir}/man?/*
 %attr(755,root,root) %{_bindir}/iserver_broadcast
 %attr(550,postgres,postgres) %{_bindir}/iserver_convert_db.sh
@@ -179,4 +192,3 @@ fi
 
 * Sun Nov 20 2000 Andy Shevchenko <andy@smcl.donetsk.ua>
 - build rpm package
-

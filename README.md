@@ -115,8 +115,10 @@ bash>cat /etc/syslog.conf |grep IServer
 
 Then go to server `/etc/iserverd` (default if no other during `confignre` run) directory
 and ensure `Server mode = STANDALONE` in `iserv.conf` when using systemd with `Type=simple`.
-Start with `systemctl enable --now iserverd.service` (recommended)
-or run `iserverd.sh start` only on legacy SysV hosts.
+Start with `systemctl enable --now iserverd.service` (default/recommended).
+Legacy SysV startup helpers (`script/iserverd.sh.asp.in`) are packaged only when
+explicit legacy packaging options are enabled for distributions that still provide
+`/etc/rc.d/init.d/functions`.
 
 WARNING: IServerd will write all important log data to syslog.
 Debug.log is for debugging only. If you can't run it - look into your
