@@ -34,8 +34,9 @@ Describe paths for daemon pidfile, translation tables and var directory.
 Name of translation table, located in 
 .B Translate path.
 .SS
-.B Server mode = daemon
-Server mode. Possible variables: daemon, standalone.
+.B Server mode = STANDALONE
+Server mode. Possible variables: DAEMON, STANDALONE.
+For systemd Type=simple use STANDALONE to keep iserverd in the foreground.
 .SS
 .B Admin email = root@localhost
 Server administartor email address 

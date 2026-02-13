@@ -91,6 +91,10 @@ i386, а под <ver> -- версия программного продукта,
 На современных Linux-дистрибутивах поддерживаемый способ запуска -- systemd:
   systemctl enable --now iserverd.service
 
+Важно: для systemd-юнита с `Type=simple` сервер должен работать в foreground-режиме,
+поэтому в `/etc/iserverd/iserv.conf` необходимо указать:
+  Server mode = STANDALONE
+
 Старый SysV init-скрипт
   /etc/rc.d/init.d/iserverd start
 оставлен только для legacy-систем и может не работать на хостах без

@@ -29,8 +29,9 @@ Var dir path		=	var/
 # Name of translation table, located in [Translate path]. 
 # Translate table	=	RUSSIAN_WIN
 
-# Server mode. Possible variables: daemon, standalone.
-Server mode		=	daemon
+# Server mode. Possible variables: DAEMON, STANDALONE.
+# For systemd Type=simple use STANDALONE to keep iserverd in the foreground.
+Server mode		=	STANDALONE
 
 # Server administartor email address 
 Admin email		=	root@localhost

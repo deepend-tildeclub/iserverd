@@ -480,7 +480,7 @@ void init_globals(void)
    Globals.aim_port	    	= AIM_PORT;
    Globals.msn_port	    	= MSN_PORT;
    Globals.max_log_size     	= LOG_UNLIMITED;
-   Globals.server_mode      	= MOD_DAEMON;
+   Globals.server_mode      	= MOD_STANDALONE;
    Globals.loglevel         	= 0;
 
    Globals.timestamp_log    	= False;

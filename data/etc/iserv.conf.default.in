@@ -14,7 +14,7 @@
  Translate path		 =	@ETC_DIR@/translate
  Translate table	 =	RUSSIAN_WIN
  Var dir path		 =	@VAR_DIR@
- Server mode		 =	daemon
+ Server mode		 =	STANDALONE
  Min childs 		 = 	4
  Max childs 		 =	100
  Shared memory size	 =	512000
