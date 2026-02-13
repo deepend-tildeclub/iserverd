@@ -22,28 +22,49 @@ AC_DEFUN(AC_PATH_PG_LIB,
       
       pg_library_dirs="\
         /usr/lib \
+        /usr/lib64 \
         /usr/local/lib \
+        /usr/local/lib64 \
         /usr/lib/pgsql \
         /usr/lib/pgsql/lib \
         /usr/local/lib/pgsql \
-        /usr/local/pgsql/lib"
+        /usr/local/pgsql/lib \
+        /usr/lib/postgresql \
+        /usr/lib/postgresql/*/lib \
+        /usr/pgsql-*/lib \
+        /usr/lib/x86_64-linux-gnu \
+        /usr/lib/aarch64-linux-gnu \
+        /usr/lib/i386-linux-gnu \
+        /usr/lib/arm-linux-gnueabihf"
   
       if test "x$PGDIR" != x; then
-        pg_library_dirs="$pg_library_dirs $PGDIR/lib"
+        pg_library_dirs="$pg_library_dirs $PGDIR/lib $PGDIR/lib64"
       fi
   
       if test "x$PGLIB" != x; then
         pg_library_dirs="$pg_library_dirs $PGLIB"
       fi
     
-      for pg_dir in $pg_library_dirs; do
-        for pg_check_lib in $pg_dir/libpq.a; do
-          if test -r $pg_check_lib; then
-            ac_pg_libraries=$pg_dir
-            break 2
+      pg_save_LIBS="$LIBS"
+      pg_save_LDFLAGS="$LDFLAGS"
+
+      dnl First try the default linker search path.
+      ac_cv_lib_pq_PQconnectdb=
+      AC_CHECK_LIB([pq], [PQconnectdb], [ac_pg_libraries=default])
+
+      if test "$ac_pg_libraries" = no; then
+        for pg_dir in $pg_library_dirs; do
+          if test -d "$pg_dir"; then
+            LDFLAGS="$pg_save_LDFLAGS -L$pg_dir"
+            LIBS="$pg_save_LIBS"
+            ac_cv_lib_pq_PQconnectdb=
+            AC_CHECK_LIB([pq], [PQconnectdb], [ac_pg_libraries=$pg_dir; break])
           fi
         done
-      done
+      fi
+
+      LIBS="$pg_save_LIBS"
+      LDFLAGS="$pg_save_LDFLAGS"
     fi
 
     ac_cv_lib_pglib=$ac_pg_libraries
@@ -58,8 +79,13 @@ AC_DEFUN(AC_PATH_PG_LIB,
   fi
   
   AC_MSG_RESULT([$ac_cv_lib_pglib])
-  PG_LDFLAGS="-L$ac_cv_lib_pglib -lpq"
-  PG_LIBDIR="$ac_cv_lib_pglib"
+  if test "$ac_cv_lib_pglib" = default; then
+    PG_LDFLAGS="-lpq"
+    PG_LIBDIR=""
+  else
+    PG_LDFLAGS="-L$ac_cv_lib_pglib -lpq"
+    PG_LIBDIR="$ac_cv_lib_pglib"
+  fi
   AC_SUBST(PG_LDFLAGS)
   AC_SUBST(PG_LIBDIR)
   
@@ -1045,4 +1071,3 @@ AC_DEFUN([PETI_PATH_SENDMAIL], [
     AC_PATH_PROG(SENDMAIL, sendmail, sendmail)
     PATH=$peti_path_backup
 ])
-
