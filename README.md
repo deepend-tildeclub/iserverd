@@ -68,6 +68,17 @@ after PostgreSQL 10 there is no reason to use outer program instead of native SQ
 IP address, port, user name and password is a typical PostgreSQL network login set.
 Please use later the same login requsites as was created.
 
+### Build tooling (Autotools)
+
+The build system uses classic Autotools inputs (`configure.in`, `aclocal.m4`).
+When regenerating build scripts from source, use at least:
+
+* **Autoconf 2.71+** (`autoconf`, `autoheader`)
+* **Automake 1.16+** (`automake`, `aclocal`)
+
+These versions are required for the migrated modern macro forms and for
+re-generating `configure`, `aclocal.m4`, and `include/config.h.in`.
+
 After you can get this project code and compile Iserverd.
 ```sh
 git clone https://github.com/namikiri/iserverd.git -b master Iserverd && cd Iserverd;

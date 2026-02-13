@@ -2,7 +2,7 @@ dnl Checking for Postgres frontend library file
 
 AC_DEFUN(AC_PATH_PG_LIB,
 [
-  AC_REQUIRE_CPP()
+  AC_REQUIRE([AC_PROG_CPP])
   AC_MSG_CHECKING(for Postgres libraries)
   
   AC_ARG_WITH(pg-libraries,
@@ -68,7 +68,7 @@ AC_DEFUN(AC_PATH_PG_LIB,
 dnl Checking for Postgres library header files
 AC_DEFUN(AC_PATH_PG_INC,
 [
-  AC_REQUIRE_CPP()
+  AC_REQUIRE([AC_PROG_CPP])
   AC_MSG_CHECKING(for Postgres includes)
   
   AC_ARG_WITH(pg-includes,
@@ -235,27 +235,27 @@ else
 fi
 AC_SUBST($1)])
 
-# Like AC_CONFIG_HEADER, but automatically create stamp file.
+# Like AC_CONFIG_HEADERS, but automatically create stamp file.
 
 AC_DEFUN(AM_CONFIG_HEADER,
-[AC_PREREQ([2.12])
-AC_CONFIG_HEADER([$1])
+[AC_PREREQ([2.71])
+AC_CONFIG_HEADERS([$1])
 dnl When config.status generates a header, we must update the stamp-h file.
 dnl This file resides in the same directory as the config header
 dnl that is generated.  We must strip everything past the first ":",
 dnl and everything past the last "/".
-AC_OUTPUT_COMMANDS(changequote(<<,>>)dnl
-ifelse(patsubst(<<$1>>, <<[^ ]>>, <<>>), <<>>,
-<<test -z "<<$>>CONFIG_HEADERS" || echo timestamp > patsubst(<<$1>>, <<^\([^:]*/\)?.*>>, <<\1>>)stamp-h<<>>dnl>>,
+AC_CONFIG_COMMANDS([default-1],[[changequote(<<,>>)dnl
+ifelse(patsubst(<<$1>>, <<^ >>, <<>>), <<>>,
+<<test -z "<<$>>CONFIG_HEADERS" || echo timestamp > patsubst(<<$1>>, <<^\(^:*/\)?.*>>, <<\1>>)stamp-h<<>>dnl>>,
 <<am_indx=1
 for am_file in <<$1>>; do
   case " <<$>>CONFIG_HEADERS " in
   *" <<$>>am_file "*<<)>>
-    echo timestamp > `echo <<$>>am_file | sed -e 's%:.*%%' -e 's%[^/]*$%%'`stamp-h$am_indx
+    echo timestamp > `echo <<$>>am_file | sed -e 's%:.*%%' -e 's%^/*$%%'`stamp-h$am_indx
     ;;
   esac
   am_indx=`expr "<<$>>am_indx" + 1`
-done<<>>dnl>>)
+done<<>>dnl>>]],[[]])
 changequote([,]))])
 
 
@@ -279,7 +279,7 @@ libtool_flags=
 test "$enable_shared" = no && libtool_flags="$libtool_flags --disable-shared"
 test "$enable_static" = no && libtool_flags="$libtool_flags --disable-static"
 test "$silent" = yes && libtool_flags="$libtool_flags --silent"
-test "$ac_cv_prog_gcc" = yes && libtool_flags="$libtool_flags --with-gcc"
+test "$ac_cv_c_compiler_gnu" = yes && libtool_flags="$libtool_flags --with-gcc"
 test "$ac_cv_prog_gnu_ld" = yes && libtool_flags="$libtool_flags --with-gnu-ld"
 
 # Some flags need to be propagated to the compiler or linker for good
@@ -396,7 +396,7 @@ AC_DEFUN(AM_PROG_LD,
 test "$withval" = no || with_gnu_ld=yes, with_gnu_ld=no)
 AC_REQUIRE([AC_PROG_CC])
 ac_prog=ld
-if test "$ac_cv_prog_gcc" = yes; then
+if test "$ac_cv_c_compiler_gnu" = yes; then
   # Check if gcc -print-prog-name=ld gives a path.
   AC_MSG_CHECKING([for ld used by GCC])
   ac_prog=`($CC -print-prog-name=ld) 2>&5`
@@ -501,17 +501,15 @@ dnl test for socklen_t (for shit recvfrom function)
 dnl ==========================================================
 AC_DEFUN(AC_TYPE_SOCKLEN_T,
 [AC_CACHE_CHECK(for socklen_t in sys/socket.h, ac_cv_type_socklen_t,
-[AC_TRY_RUN(
-[
+[AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
 #include <sys/types.h>
 #include <sys/socket.h>
-main()
+int main(void)
 {
  socklen_t socklen;
+ return (int)socklen;
 }
-],
-  ac_cv_type_socklen_t=yes, ac_cv_type_socklen_t=no, 
-  ac_cv_type_socklen_t=no)
+]])],[ac_cv_type_socklen_t=yes],[ac_cv_type_socklen_t=no])
 ])]
 
 if test "$ac_cv_type_socklen_t" = yes; then
@@ -525,24 +523,18 @@ dnl test if recvfrom have signed 6th arg
 dnl ==========================================================
 AC_DEFUN(AC_RECVFROM_WITH_INT,
 [AC_CACHE_CHECK(if recvfrom have signed 6th arg, ac_cv_recvfrom_with_int,
-[AC_LANG_CPLUSPLUS
- AC_TRY_COMPILE(
- changequote(<<, >>)dnl
- <<
+[AC_LANG([C++])
+ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
  #include <sys/types.h>
  #include <sys/socket.h>
- >>,
-
- << 
+ ], [
   struct sockaddr client_addr;
   int socklen = sizeof(client_addr);
   int buffr;
-     
+
   recvfrom(0, &buffr, 0, 0, &client_addr, &socklen);
- >>,
- changequote([, ])dnl
- ac_cv_recvfrom_with_int=yes, ac_cv_recvfrom_with_int=no)
- AC_LANG_C])]
+ ])],[ac_cv_recvfrom_with_int=yes],[ac_cv_recvfrom_with_int=no])
+ AC_LANG([C])])]
  
 if test "$ac_cv_recvfrom_with_int" = yes; then
  AC_DEFINE([RECVFROM_WITH_INT], 1, [Define if we can use signed int in recvfrom()])
@@ -552,7 +544,7 @@ fi
 
 AC_DEFUN(AC_PATH_PG_BIN,
 [
-  AC_REQUIRE_CPP()
+  AC_REQUIRE([AC_PROG_CPP])
   AC_MSG_CHECKING(for Postgres binaries)
   
   ac_pg_binaries="no"
@@ -628,14 +620,13 @@ dnl
 AC_DEFUN([ETR_SYSV_IPC],
 [
 AC_CACHE_CHECK([for System V IPC headers], ac_cv_sysv_ipc, [
-        AC_TRY_COMPILE(
-                [
+        AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
                         #include <sys/types.h>
                         #include <sys/ipc.h>
                         #include <sys/msg.h>
                         #include <sys/sem.h>
                         #include <sys/shm.h>
-                ],, ac_cv_sysv_ipc=yes, ac_cv_sysv_ipc=no)
+                ]], [[]])],[ac_cv_sysv_ipc=yes],[ac_cv_sysv_ipc=no])
 ])
 
         if test x"$ac_cv_sysv_ipc" = "xyes"
@@ -650,8 +641,7 @@ dnl
 AC_DEFUN([CHECK_BACKTRACE],
 [
 AC_CACHE_CHECK([for backtrace], ac_cv_check_backtrace, [
-        AC_TRY_COMPILE(
-                [
+        AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
                         #include <sys/types.h>
                         #include <execinfo.h>
 			
@@ -661,7 +651,7 @@ AC_CACHE_CHECK([for backtrace], ac_cv_check_backtrace, [
 			   int addr_num = backtrace(addr_array, 32);
 			}
 			
-                ],, ac_cv_check_backtrace=yes, ac_cv_check_backtrace=no)
+                ]], [[]])],[ac_cv_check_backtrace=yes],[ac_cv_check_backtrace=no])
 ])
 
         if test x"$ac_cv_check_backtrace" = "xyes"
@@ -688,15 +678,11 @@ dnl
 AC_DEFUN([ETR_STRUCT_SEMUN],
 [
 AC_CACHE_CHECK([for struct semun], ac_cv_struct_semun, [
-        AC_TRY_COMPILE(
-                [
+        AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
                         #include <sys/types.h>
                         #include <sys/ipc.h>
                         #include <sys/sem.h>
-                ],
-                [ union semun s; ],
-                ac_cv_struct_semun=yes,
-                ac_cv_struct_semun=no)
+                ]], [[ union semun s; ]])],[ac_cv_struct_semun=yes],[ac_cv_struct_semun=no])
 ])
 
         if test x"$ac_cv_struct_semun" = "xyes"
@@ -724,7 +710,7 @@ dnl The following is not:
 dnl
 dnl      switch (0) case 0: case 0:;
 dnl
-dnl Thus, the AC_TRY_COMPILE will fail if the currently tried size
+dnl Thus, the AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[],[]) will fail if the currently tried size
 dnl does not match.
 dnl
 dnl Here is an example skeleton configure.in script, demonstrating the
@@ -766,10 +752,10 @@ changequote([, ])dnl
 AC_MSG_CHECKING(size of $1)
 AC_CACHE_VAL(AC_CV_NAME,
 [for ac_size in 4 8 1 2 16 $2 ; do # List sizes in rough order of prevalence.
-  AC_TRY_COMPILE([#include "confdefs.h"
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include "confdefs.h"
 #include <sys/types.h>
 $2
-], [switch (0) case 0: case (sizeof ($1) == $ac_size):;], AC_CV_NAME=$ac_size)
+]], [[switch (0) case 0: case (sizeof ($1) == $ac_size):;]])],[AC_CV_NAME=$ac_size],[])
   if test x$AC_CV_NAME != x ; then break; fi
 done
 ])
@@ -981,10 +967,7 @@ ac_lib_var=`echo $1['_']$2 | sed 'y%./+-%__p_%'`
 AC_CACHE_VAL(ac_cv_lib_$ac_lib_var,
 [ eval "ac_cv_type_$ac_lib_var='not-found'"
   ac_cv_check_typedef_header=`echo ifelse([$2], , stddef.h, $2)`
-  AC_TRY_COMPILE( [#include <$ac_cv_check_typedef_header>], 
-	[int x = sizeof($1); x = x;],
-        eval "ac_cv_type_$ac_lib_var=yes" ,
-        eval "ac_cv_type_$ac_lib_var=no" )
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <$ac_cv_check_typedef_header>]], [[int x = sizeof($1); x = x;]])],[eval "ac_cv_type_$ac_lib_var=yes" ],[eval "ac_cv_type_$ac_lib_var=no" ])
   if test `eval echo '$ac_cv_type_'$ac_lib_var` = "no" ; then 
      ifelse([$4], , :, $4)
   else 
@@ -1045,4 +1028,3 @@ AC_DEFUN([PETI_PATH_SENDMAIL], [
     AC_PATH_PROG(SENDMAIL, sendmail, sendmail)
     PATH=$peti_path_backup
 ])
-

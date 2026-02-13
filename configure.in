@@ -1,11 +1,11 @@
 dnl Process this file with autoconf to produce a configure script.
 dnl -------------------------------------------------------------
-AC_INIT(IServerd, 2.5.5-20080609, BUGS on http://sourceforge.net/projects/iserverd)
-AC_PREREQ(2.52)
+AC_INIT([IServerd],[2.5.5-20080609],[BUGS on http://sourceforge.net/projects/iserverd])
+AC_PREREQ([2.71])
 AC_CANONICAL_HOST
 AC_UNAME_SYS
-AM_INIT_AUTOMAKE(IServerd, 2.5.5-20080609)
-AC_CONFIG_HEADER(include/config.h) 
+AM_INIT_AUTOMAKE([foreign])
+AC_CONFIG_HEADERS([include/config.h])
 
 MAJOR_VERSION=2
 MINOR_VERSION=5
@@ -168,7 +168,15 @@ AC_SUBST(SERVROOT)
 AC_DEFINE_UNQUOTED(SERVER_ROOT, "$prefix", [Server root])
 
 dnl Checks for header files.
-AC_HEADER_STDC
+m4_warn([obsolete],
+[The preprocessor macro `STDC_HEADERS' is obsolete.
+  Except in unusual embedded environments, you can safely include all
+  ISO C90 headers unconditionally.])dnl
+# Autoupdate added the next two lines to ensure that your configure
+# script's behavior did not change.  They are probably safe to remove.
+AC_CHECK_INCLUDES_DEFAULT
+AC_PROG_EGREP
+
 AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS(sys/types.h stdio.h stddef.h sys/wait.h)
 AC_CHECK_HEADERS(fcntl.h)
@@ -277,9 +285,34 @@ AC_FUNC_SETPGRP
 
 AC_TYPE_PID_T
 AC_TYPE_SIZE_T
-AC_HEADER_TIME
+m4_warn([obsolete],
+[Update your code to rely only on HAVE_SYS_TIME_H,
+then remove this warning and the obsolete code below it.
+All current systems provide time.h; it need not be checked for.
+Not all systems provide sys/time.h, but those that do, all allow
+you to include it and time.h simultaneously.])dnl
+AC_CHECK_HEADERS_ONCE([sys/time.h])
+# Obsolete code to be removed.
+if test $ac_cv_header_sys_time_h = yes; then
+  AC_DEFINE([TIME_WITH_SYS_TIME],[1],[Define to 1 if you can safely include both <sys/time.h>
+	     and <time.h>.  This macro is obsolete.])
+fi
+# End of obsolete code.
+
 AC_STRUCT_TM
-AC_TYPE_SIGNAL
+m4_warn([obsolete],
+[your code may safely assume C89 semantics that RETSIGTYPE is void.
+Remove this warning and the `AC_CACHE_CHECK' when you adjust the code.])dnl
+AC_CACHE_CHECK([return type of signal handlers],[ac_cv_type_signal],[AC_COMPILE_IFELSE(
+[AC_LANG_PROGRAM([#include <sys/types.h>
+#include <signal.h>
+],
+		 [return *(signal (0, 0)) (0) == 1;])],
+		   [ac_cv_type_signal=int],
+		   [ac_cv_type_signal=void])])
+AC_DEFINE_UNQUOTED([RETSIGTYPE],[$ac_cv_type_signal],[Define as the return type of signal handlers
+		    (`int' or `void').])
+
 
 dnl Check for u_int64_t
 AC_CHECK_TYPE(u_int64_t, unsigned long long)
@@ -329,12 +362,14 @@ directory or in public binaries directory.
 fi
 
 AC_CACHE_CHECK([for PS_STRINGS], [pgac_cv_var_PS_STRINGS],
-[AC_TRY_LINK(
-[#include <machine/vmparam.h>
+[AC_LINK_IFELSE([
+AC_LANG_PROGRAM([
+#include <machine/vmparam.h>
 #include <sys/exec.h>
-],
-[PS_STRINGS->ps_nargvstr = 1;
-PS_STRINGS->ps_argvstr = "foo";],
+], [
+PS_STRINGS->ps_nargvstr = 1;
+PS_STRINGS->ps_argvstr = "foo";
+])],
 [pgac_cv_var_PS_STRINGS=yes],
 [pgac_cv_var_PS_STRINGS=no])])
 if test "$pgac_cv_var_PS_STRINGS" = yes ; then
@@ -457,10 +492,10 @@ AC_ARG_WITH(poll,
                   then
                         AC_MSG_RESULT(yes)
 
-                        dnl Check for the Linux epoll interface; epoll* may be available in libc
-                        dnl but return ENOSYS on a pre-2.6 kernel, so do a run-time check.
+                        dnl Check for the Linux epoll interface via compile-time probe.
                         AC_CACHE_CHECK([for working epoll_create() function], [apr_cv_epoll],
-                        [AC_TRY_RUN([
+                        [AC_COMPILE_IFELSE([
+                        AC_LANG_PROGRAM([
 #ifdef HAVE_STDINT_H
 #include <stdint.h>
 #endif
@@ -476,10 +511,10 @@ AC_ARG_WITH(poll,
 #ifdef HAVE_SYS_EPOLL_H
 #include <sys/epoll.h>
 #endif
-
-int main() { return epoll_create(5) == -1; }
-
-                        ], [apr_cv_epoll=yes], [apr_cv_epoll=no], [apr_cv_epoll=no])])
+                        ], [
+int ep = epoll_create(5);
+return ep == -1;
+                        ])], [apr_cv_epoll=yes], [apr_cv_epoll=no])])
 
                         if test "$apr_cv_epoll" = "yes"; then
                            AC_DEFINE([HAVE_EPOLL], 1, [Define if the epoll interface is supported])
@@ -525,15 +560,15 @@ fi
 AC_SUBST(SYS_MKTMP)
 
 dnl Now we can setup Makefiles and scripts with includes
-AC_OUTPUT(Makefile data/Makefile script/Makefile 
-          IServerd.spec
-	  script/iserver_icquser script/db_manage.sh include/defaults.h
-	  script/iserverd.sh script/iserverd.sh.asp 
-	  script/iserver_post_mess.cgi man/Makefile 
-	  script/iserver_convert_db.sh
-	  data/etc/iserv.conf.default 
-	  data/etc/v3_proto.conf.default 
-	  data/etc/v5_proto.conf.default
-	  data/etc/v7_proto.conf.default
-	  data/etc/actions.conf.default)
-
+AC_CONFIG_FILES([Makefile data/Makefile script/Makefile
+                 IServerd.spec
+                 script/iserver_icquser script/db_manage.sh include/defaults.h
+                 script/iserverd.sh script/iserverd.sh.asp
+                 script/iserver_post_mess.cgi man/Makefile
+                 script/iserver_convert_db.sh
+                 data/etc/iserv.conf.default
+                 data/etc/v3_proto.conf.default
+                 data/etc/v5_proto.conf.default
+                 data/etc/v7_proto.conf.default
+                 data/etc/actions.conf.default])
+AC_OUTPUT
