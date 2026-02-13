@@ -198,31 +198,6 @@
 #include <execinfo.h>
 #endif
 
-/* Defines for u_intxx_t */
-#ifndef u_int8_t
-#define u_int8_t uint8_t
-#endif
-
-#ifndef u_int16_t
-#define u_int16_t uint16_t
-#endif
-
-#ifndef u_int32_t
-#define u_int32_t uint32_t
-#endif
-
-#ifdef __cplusplus
-#ifndef u_int64_t
-#ifdef uint64_t
-#define u_int64_t uint64_t
-#else
-#ifndef HAVE_TYPE_U_INT64_T
-typedef unsigned long long u_int64_t;
-#endif
-#endif
-#endif
-#endif
-
 #if defined(HAVE_SIGACTION) && defined(HAVE_SIGPROCMASK) && defined(HAVE_SIGADDSET)
 # include <signal.h>
 #endif

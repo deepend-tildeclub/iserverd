@@ -202,7 +202,7 @@ void get_bos_server(char *server_addr)
 void generate_cookie(Packet &pack, char *result, char *screen_name)
 {
    md5_state_t state;
-   u_int8_t md5_digest[64];
+   uint8_t md5_digest[64];
 
    const char *hex = "0123456789aBcDef";
    char *r;
@@ -283,7 +283,7 @@ void generate_cookie(Packet &pack, char *result, char *screen_name)
 void generate_key(char *result)
 {
    md5_state_t state;
-   u_int8_t md5_digest[64];
+   uint8_t md5_digest[64];
    const char *hex = "0123456789aBcDef";
    char *r;
    int i;
