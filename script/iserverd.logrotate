@@ -4,7 +4,13 @@
     create 644 iserverd iserverd
     compress
     postrotate
+<<<<<<< ours
       [ -r /run/iserverd/iserverd.pid ] && kill -HUP "$(cat /run/iserverd/iserverd.pid)" 2>/dev/null || true
+=======
+        PIDFILE=/run/iserverd/iserverd.pid
+        [ -r "$PIDFILE" ] || PIDFILE=/var/run/iserverd/iserverd.pid
+        [ -r "$PIDFILE" ] && /bin/kill -HUP "$(cat "$PIDFILE")" || true
+>>>>>>> theirs
     endscript
 }
 
@@ -14,7 +20,13 @@
     create 644 iserverd iserverd
     compress
     postrotate
+<<<<<<< ours
       [ -r /run/iserverd/iserverd.pid ] && kill -HUP "$(cat /run/iserverd/iserverd.pid)" 2>/dev/null || true
+=======
+        PIDFILE=/run/iserverd/iserverd.pid
+        [ -r "$PIDFILE" ] || PIDFILE=/var/run/iserverd/iserverd.pid
+        [ -r "$PIDFILE" ] && /bin/kill -HUP "$(cat "$PIDFILE")" || true
+>>>>>>> theirs
     endscript
 }
 
@@ -24,7 +36,13 @@
     create 644 iserverd iserverd
     compress
     postrotate
+<<<<<<< ours
       [ -r /run/iserverd/iserverd.pid ] && kill -HUP "$(cat /run/iserverd/iserverd.pid)" 2>/dev/null || true
+=======
+        PIDFILE=/run/iserverd/iserverd.pid
+        [ -r "$PIDFILE" ] || PIDFILE=/var/run/iserverd/iserverd.pid
+        [ -r "$PIDFILE" ] && /bin/kill -HUP "$(cat "$PIDFILE")" || true
+>>>>>>> theirs
     endscript
 }
 
@@ -34,6 +52,12 @@
     create 644 iserverd iserverd
     compress
     postrotate
+<<<<<<< ours
       [ -r /run/iserverd/iserverd.pid ] && kill -HUP "$(cat /run/iserverd/iserverd.pid)" 2>/dev/null || true
+=======
+        PIDFILE=/run/iserverd/iserverd.pid
+        [ -r "$PIDFILE" ] || PIDFILE=/var/run/iserverd/iserverd.pid
+        [ -r "$PIDFILE" ] && /bin/kill -HUP "$(cat "$PIDFILE")" || true
+>>>>>>> theirs
     endscript
 }

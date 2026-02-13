@@ -5,7 +5,7 @@
 # chkconfig: 345 95 05
 # description: Groupware ICQ Server clone
 # processname: iserverd
-# pidfile: /var/run/iserverd/iserverd.pid
+# pidfile: /run/iserverd/iserverd.pid
 
 # pathes
 VAR=@VAR_DIR@

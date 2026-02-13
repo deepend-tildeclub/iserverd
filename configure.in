@@ -52,7 +52,7 @@ AC_CHECK_LIB(epoll, epoll_create, [LIBS="$LIBS -lepoll"])
 dnl Check for prefix directory
 if test "$prefix" = "NONE"; then
     prefix=$ac_default_prefix
-    VAR_DIR="/var/run/iserverd"
+    VAR_DIR="/run/iserverd"
     ETC_DIR="/etc/iserverd"
     BIN_DIR="/usr/bin"
     SBIN_DIR="/usr/sbin"
@@ -90,7 +90,7 @@ AC_ARG_WITH(etcdir,
 
 dnl check if user specified VAR directory path
 AC_ARG_WITH(vardir,
-[  --with-vardir=DIR     Where to put runtime and pid files (/var/run/$pr_name/)],
+[  --with-vardir=DIR     Where to put runtime and pid files (/run/$pr_name/)],
 [ case "$withval" in
   yes|no)
     AC_MSG_WARN([--with-vardir called without argument - will use default])

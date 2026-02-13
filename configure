@@ -1406,7 +1406,7 @@ Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-etcdir=DIR     Where to put config files (/etc/$pr_name/)
-  --with-vardir=DIR     Where to put runtime and pid files (/var/run/$pr_name/)
+  --with-vardir=DIR     Where to put runtime and pid files (/run/$pr_name/)
   --with-logdir=DIR     Where to put log files (/var/log/$pr_name/)
   --with-bindir=DIR     Where to put executable files (/usr/bin/)
   --with-sbindir=DIR     Where to put daemons files (/usr/bin/)
@@ -5149,7 +5149,7 @@ fi
 
 if test "$prefix" = "NONE"; then
     prefix=$ac_default_prefix
-    VAR_DIR="/var/run/iserverd"
+    VAR_DIR="/run/iserverd"
     ETC_DIR="/etc/iserverd"
     BIN_DIR="/usr/bin"
     SBIN_DIR="/usr/sbin"
