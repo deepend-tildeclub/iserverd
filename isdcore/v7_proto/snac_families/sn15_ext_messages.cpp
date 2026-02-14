@@ -4538,11 +4538,16 @@ void mr_search_info_req(Packet &pack, struct online_user *user,
    unsigned short min_age, max_age;
    char gender;
    PGresult *res;
-   BOOL is_first_clause, not_implemented;
+   BOOL not_implemented;
    ffstring uin;
    unsigned short online_only, language, martial, req_type;
    unsigned long country;
-   char status;
+   const int MAX_SEARCH_PARAMS = 16;
+   const char *param_values[MAX_SEARCH_PARAMS];
+   int param_count = 0;
+   char uin_param[32], min_age_param[8], max_age_param[8], gender_param[8];
+   char language_param[8], country_param[16], martial_param[8];
+   ffstring nick_like, first_like, last_like, email_like, city_like;
 
    send_event2ap(papack, ACT_SEARCH, user->uin, user->status,
                  ipToIcq(user->ip), 52, longToTime(time(NULL)), "");
@@ -4560,24 +4565,29 @@ void mr_search_info_req(Packet &pack, struct online_user *user,
    {
       v7_extract_string(uin, *stlv, 32);
       convert_from_unicode(uin, sizeof(uin));
-      convert_to_postgres(uin, sizeof(uin));
 
-      snprintf(clause_temp, 255, "AND (users_info_ext.uin=%s) ", uin);
+      unsigned long parsed_uin = strtoul(uin, NULL, 10);
+      slprintf(uin_param, sizeof(uin_param)-1, "%lu", parsed_uin);
 
-      safe_strcat(dbcomm_str, clause_temp, 4095);
-      not_implemented = False;
-      is_first_clause = False;
+      if ((parsed_uin > 0) && (strlen(uin) > 0) && (strspn(uin, "0123456789") == strlen(uin)))
+      {
+         snprintf(clause_temp, 255, "AND (users_info_ext.uin=$%d) ", param_count + 1);
+         safe_strcat(dbcomm_str, clause_temp, 4095);
+         param_values[param_count++] = uin_param;
+         not_implemented = False;
+      }
    }
    
    /* nick name stlv = 0x0078 */
    if ((stlv = tlv_chain.get(0x0078)) != NULL)
    {
       v7_extract_string(nick_str, *stlv, 32);
-      convert_from_unicode(nick_str, sizeof(nick_str));      
-      convert_to_postgres(nick_str, sizeof(nick_str));
-      
-      snprintf(clause_temp, 255, "AND (upper(nick) like upper('%%%s%%')) ", nick_str);
+      convert_from_unicode(nick_str, sizeof(nick_str));
+
+      snprintf(nick_like, sizeof(nick_like)-1, "%%%s%%", nick_str);
+      snprintf(clause_temp, 255, "AND (upper(nick) like upper($%d)) ", param_count + 1);
       safe_strcat(dbcomm_str, clause_temp, 4095);
+      param_values[param_count++] = nick_like;
       not_implemented = False;
    }
 
@@ -4585,11 +4595,12 @@ void mr_search_info_req(Packet &pack, struct online_user *user,
    if ((stlv = tlv_chain.get(0x0064)) != NULL)
    {
       v7_extract_string(first_str, *stlv, 32);
-      convert_from_unicode(first_str, sizeof(first_str));      
-      convert_to_postgres(first_str, sizeof(first_str));
-	 
-      snprintf(clause_temp, 255, "AND (upper(frst) like upper('%%%s%%')) ", first_str);
+      convert_from_unicode(first_str, sizeof(first_str));
+
+      snprintf(first_like, sizeof(first_like)-1, "%%%s%%", first_str);
+      snprintf(clause_temp, 255, "AND (upper(frst) like upper($%d)) ", param_count + 1);
       safe_strcat(dbcomm_str, clause_temp, 4095);
+      param_values[param_count++] = first_like;
       not_implemented = False;
    }
 
@@ -4597,11 +4608,12 @@ void mr_search_info_req(Packet &pack, struct online_user *user,
    if ((stlv = tlv_chain.get(0x006E)) != NULL)
    {
       v7_extract_string(last_str,  *stlv, 32);
-      convert_from_unicode(last_str, sizeof(last_str));      
-      convert_to_postgres(last_str, sizeof(last_str));
-      
-      snprintf(clause_temp, 255, "AND (upper(last) like upper('%%%s%%')) ", last_str);
+      convert_from_unicode(last_str, sizeof(last_str));
+
+      snprintf(last_like, sizeof(last_like)-1, "%%%s%%", last_str);
+      snprintf(clause_temp, 255, "AND (upper(last) like upper($%d)) ", param_count + 1);
       safe_strcat(dbcomm_str, clause_temp, 4095);
+      param_values[param_count++] = last_like;
       not_implemented = False;
    }
 
@@ -4610,14 +4622,15 @@ void mr_search_info_req(Packet &pack, struct online_user *user,
    {
       v7_extract_string(email,  *stlv, 63);
       convert_from_unicode(email, sizeof(email));
-      convert_to_postgres(email, sizeof(email));
-      
-      snprintf(clause_temp, 255, "AND (((upper(email1) like upper('%%%s%%')) AND (e1publ=0)) ", email);
+
+      snprintf(email_like, sizeof(email_like)-1, "%%%s%%", email);
+      snprintf(clause_temp, 255, "AND (((upper(email1) like upper($%d)) AND (e1publ=0)) ", param_count + 1);
       safe_strcat(dbcomm_str, clause_temp, 4095);
-      snprintf(clause_temp, 255, "OR (upper(email2) like upper('%%%s%%')) ", email);
+      snprintf(clause_temp, 255, "OR (upper(email2) like upper($%d)) ", param_count + 1);
       safe_strcat(dbcomm_str, clause_temp, 4095);
-      snprintf(clause_temp, 255, "OR (upper(email3) like upper('%%%s%%'))) ", email);
+      snprintf(clause_temp, 255, "OR (upper(email3) like upper($%d))) ", param_count + 1);
       safe_strcat(dbcomm_str, clause_temp, 4095);
+      param_values[param_count++] = email_like;
       not_implemented = False;
    }
 
@@ -4629,10 +4642,14 @@ void mr_search_info_req(Packet &pack, struct online_user *user,
       max_age = ntohs(max_age);
       min_age = ntohs(min_age);
       
-      if ((min_age != 0) && (max_age != 0) && (min_age < 61) && (max_age < 121)) 
+      if ((min_age != 0) && (max_age != 0) && (min_age <= max_age) && (min_age < 61) && (max_age < 121))
       {
-         snprintf(clause_temp, 255, "AND ((age >= %d) AND (age <= %d)) ", min_age, max_age);
+         slprintf(min_age_param, sizeof(min_age_param)-1, "%hu", min_age);
+         slprintf(max_age_param, sizeof(max_age_param)-1, "%hu", max_age);
+         snprintf(clause_temp, 255, "AND ((age >= $%d) AND (age <= $%d)) ", param_count + 1, param_count + 2);
          safe_strcat(dbcomm_str, clause_temp, 4095);
+         param_values[param_count++] = min_age_param;
+         param_values[param_count++] = max_age_param;
          not_implemented = False;
       }
    }
@@ -4645,8 +4662,10 @@ void mr_search_info_req(Packet &pack, struct online_user *user,
    
       if ((gender < 3) && (gender > 0))
       {
-         snprintf(clause_temp, 255, "AND (sex = %d) ", gender);
+         slprintf(gender_param, sizeof(gender_param)-1, "%d", gender);
+         snprintf(clause_temp, 255, "AND (sex = $%d) ", param_count + 1);
          safe_strcat(dbcomm_str, clause_temp, 4095);
+         param_values[param_count++] = gender_param;
          not_implemented = False;
       }
    }
@@ -4660,9 +4679,10 @@ void mr_search_info_req(Packet &pack, struct online_user *user,
    
       if ((language > 0) && (language < 256))
       {
-         snprintf(clause_temp, 255, "AND (%d in (lang1, lang2, lang3)) ", 
-                  language);
+         slprintf(language_param, sizeof(language_param)-1, "%hu", language);
+         snprintf(clause_temp, 255, "AND ($%d in (lang1, lang2, lang3)) ", param_count + 1);
          safe_strcat(dbcomm_str, clause_temp, 4095);
+         param_values[param_count++] = language_param;
          not_implemented = False;
       }
    }
@@ -4671,13 +4691,14 @@ void mr_search_info_req(Packet &pack, struct online_user *user,
    if ((stlv = tlv_chain.get(0x00A0)) != NULL)
    {
       v7_extract_string(city,  *stlv, 32);
-      convert_from_unicode(city, sizeof(city));      
-      convert_to_postgres(city, sizeof(city));
-      
-      if (strlen(city) != 0) 
+      convert_from_unicode(city, sizeof(city));
+
+      if (strlen(city) != 0)
       {
-         snprintf(clause_temp, 255, "AND (upper(hcity) like upper('%%%s%%')) ", city);
+         snprintf(city_like, sizeof(city_like)-1, "%%%s%%", city);
+         snprintf(clause_temp, 255, "AND (upper(hcity) like upper($%d)) ", param_count + 1);
          safe_strcat(dbcomm_str, clause_temp, 4095);
+         param_values[param_count++] = city_like;
          not_implemented = False;
       }
    }
@@ -4705,10 +4726,12 @@ void mr_search_info_req(Packet &pack, struct online_user *user,
       
       country = ntohl(country);
    
-      if ((country > 0) && (country < 20000)) 
+      if ((country > 0) && (country < 20000))
       {
-         snprintf(clause_temp, 255, "AND ((hcountry=%lu) OR (wcountry=%lu)) ", country, country);
+         slprintf(country_param, sizeof(country_param)-1, "%lu", country);
+         snprintf(clause_temp, 255, "AND ((hcountry=$%d) OR (wcountry=$%d)) ", param_count + 1, param_count + 1);
          safe_strcat(dbcomm_str, clause_temp, 4095);
+         param_values[param_count++] = country_param;
          not_implemented = False;
       }
    }
@@ -5175,8 +5198,10 @@ void mr_search_info_req(Packet &pack, struct online_user *user,
    
       if ((martial < 256) && (martial > 0))
       {
-         snprintf(clause_temp, 255, "AND (martial = %d) ", martial);
+         slprintf(martial_param, sizeof(martial_param)-1, "%hu", martial);
+         snprintf(clause_temp, 255, "AND (martial = $%d) ", param_count + 1);
          safe_strcat(dbcomm_str, clause_temp, 4095);
+         param_values[param_count++] = martial_param;
          not_implemented = False;
       }
    }
@@ -5185,7 +5210,7 @@ void mr_search_info_req(Packet &pack, struct online_user *user,
                  ipToIcq(user->ip), 55, longToTime(time(NULL)), "UTF-8 search");
 
    /* now query is ready - we can run it */
-   res = PQexec(users_dbconn, dbcomm_str);
+   res = PQexecParams(users_dbconn, dbcomm_str, param_count, NULL, param_values, NULL, NULL, 0);
    DEBUG(10, ("query: %s\n", dbcomm_str));
    
    if (PQresultStatus(res) != PGRES_TUPLES_OK)

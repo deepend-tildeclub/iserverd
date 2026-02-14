@@ -813,21 +813,20 @@ int db_users_setwebpage_info(unsigned long to_uin, char *user_page, int htype)
 int db_users_setbasic_info(unsigned long to_uin, struct full_user_info &userinfo)
 {
    PGresult *res;
-   cstring dbcomm_str;
-   fstring nick, first, last, email;
+   char to_uin_str[32];
+   const char *sql = "UPDATE Users_Info_Ext SET nick=$1, frst=$2, last=$3, email1=$4, email2=$5 WHERE uin=$6";
+   const char *params[6];
 
-   /* now we should convert string to specified locale and PG format */
-   convert_to_postgres(nick,  sizeof(fstring)-1, userinfo.nick);
-   convert_to_postgres(first, sizeof(fstring)-1, userinfo.first);
-   convert_to_postgres(last,  sizeof(fstring)-1, userinfo.last);
-   convert_to_postgres(email, sizeof(fstring)-1, userinfo.email2);
+   slprintf(to_uin_str, sizeof(to_uin_str)-1, "%lu", to_uin);
 
-   /* exec update command on backend server */
-   slprintf(dbcomm_str, sizeof(dbcomm_str)-1,
-           "UPDATE Users_Info_Ext SET nick='%s', frst='%s', last='%s', email1='%s', email2='%s' WHERE uin=%lu",
- 	    nick, first, last, email, email, to_uin);
+   params[0] = userinfo.nick;
+   params[1] = userinfo.first;
+   params[2] = userinfo.last;
+   params[3] = userinfo.email2;
+   params[4] = userinfo.email2;
+   params[5] = to_uin_str;
 
-   res = PQexec(users_dbconn, dbcomm_str);
+   res = PQexecParams(users_dbconn, sql, 6, NULL, params, NULL, NULL, 0);
    if (PQresultStatus(res) != PGRES_COMMAND_OK)
    {
       handle_database_error(res, "[SET BASIC INFO]");
@@ -853,17 +852,18 @@ int db_users_setbasic_info(unsigned long to_uin, struct full_user_info &userinfo
 int db_users_setnotes(unsigned long to_uin, struct notes_user_info &notes)
 {
    PGresult *res;
-   cstring dbcomm_str, lnotes;
+   char to_uin_str[32], nnotes_str[32];
+   const char *sql = "UPDATE Users_Info_Ext SET notes=$1,nnotes=$2 WHERE uin=$3";
+   const char *params[3];
 
-   /* now we should convert string to specified locale and PG format */
-   convert_to_postgres(lnotes, sizeof(lnotes)-128, notes.notes);
+   slprintf(to_uin_str, sizeof(to_uin_str)-1, "%lu", to_uin);
+   slprintf(nnotes_str, sizeof(nnotes_str)-1, "%lu", (unsigned long)time(NULL));
 
-   /* exec select command on backend server */
-   slprintf(dbcomm_str, sizeof(dbcomm_str)-1,
-           "UPDATE Users_Info_Ext SET notes='%s',nnotes='%lu' WHERE uin='%lu'",
-	    lnotes, time(NULL), to_uin);
+   params[0] = notes.notes;
+   params[1] = nnotes_str;
+   params[2] = to_uin_str;
 
-   res = PQexec(users_dbconn, dbcomm_str);
+   res = PQexecParams(users_dbconn, sql, 3, NULL, params, NULL, NULL, 0);
    if (PQresultStatus(res) != PGRES_COMMAND_OK)
    {
       handle_database_error(res, "[SET NOTES]");
@@ -1733,4 +1733,3 @@ int db_users_setwork_info2(unsigned long to_uin,
       return(-1);
    }
 }
-
