@@ -28,10 +28,22 @@
 #include <string.h>
 #endif
 
+#ifdef HAVE_ERRNO_H
+#include <errno.h>
+#endif
+
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
+
+#ifdef HAVE_TIME_H
+#include <time.h>
+#endif
+
 int main(int argc, char **argv)
 {
    char tempst[1024];
-   int fd;
+   int fd = -1;
 
    if (argc < 2)
    {
@@ -39,19 +51,62 @@ int main(int argc, char **argv)
       exit(-1);
    }
 
-   strncpy(tempst, argv[1], 1023);
+   strncpy(tempst, argv[1], sizeof(tempst) - 1);
+   tempst[sizeof(tempst) - 1] = '\0';
+
+   if (strstr(tempst, "XXXXXX") == NULL)
+   {
+      fprintf(stderr, "error: template must include XXXXXX\n");
+      return(1);
+   }
 
 #ifdef HAVE_MKSTEMP
    fd = mkstemp(tempst);
+   if (fd < 0)
+   {
+      perror("mkstemp");
+      return(1);
+   }
 #else
-#ifdef HAVE_MKTEMP
-   mktemp(tempst);
-   fd = open(tempst, O_CREAT);
-#else
-#define close "ERROR: I need mktemp utility or mktemp/mkstemp functions"
+   char *xst = strstr(tempst, "XXXXXX");
+   const char letters[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+   int i;
+
+   srand((unsigned int)(time(NULL) ^ getpid()));
+   for (i = 0; i < 256; i++)
+   {
+      int j;
+
+      for (j = 0; j < 6; j++)
+      {
+         xst[j] = letters[rand() % (sizeof(letters) - 1)];
+      }
+
+      fd = open(tempst, O_CREAT|O_EXCL|O_RDWR, 0600);
+      if (fd >= 0)
+      {
+         break;
+      }
+
+      if (errno != EEXIST && errno != EINTR)
+      {
+         perror("open");
+         return(1);
+      }
+   }
+
+   if (fd < 0)
+   {
+      fprintf(stderr, "error: unable to create temporary file securely\n");
+      return(1);
+   }
 #endif
-#endif
-   close(fd);
+
+   if (fd >= 0)
+   {
+      close(fd);
+   }
+
    printf("%s\n", tempst);
    return(0);
 }
