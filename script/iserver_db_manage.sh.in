@@ -18,11 +18,24 @@ usage() {
     exit 0
 }
 
+sql_escape_literal() {
+    # SQL string literal escaping: single quote becomes doubled single quote.
+    # shellcheck disable=SC2001
+    printf "%s" "$1" | sed "s/'/''/g"
+}
+
+sql_quote_ident() {
+    # SQL identifier escaping: wrap in double-quotes and double embedded quotes.
+    # shellcheck disable=SC2001
+    escaped=`printf "%s" "$1" | sed 's/"/""/g'`
+    printf '"%s"' "$escaped"
+}
+
 create() {
     user="$1"; passwd="$2"
     if [ "$user" = "" ]; then
         echo @ECHO_N@ "Please, input database username: @ECHO_C@" ; read user
-        while [ "$user" = "" ]; do   
+        while [ "$user" = "" ]; do
 	    echo @ECHO_N@ "Please, input database username: @ECHO_C@" ; read user
         done
     fi
@@ -35,25 +48,27 @@ create() {
     fi
 
     # We should create databases
-    [ -z "`$PSQL -l | grep $users_db`" ] && $CREATEDB $users_db
+    [ -z "`$PSQL -l | grep -F "$users_db"`" ] && $CREATEDB "$users_db"
     # Database initialization (creating tables, views, etc)
-    # create new user in database
-    if [ -z "`$PSQL -c \"select usename from pg_shadow\" $users_db | grep $user`" ]
+    # create new user role in database if it does not exist yet
+    if [ -z "`$PSQL -tA -d "$users_db" -c "SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = '$(sql_escape_literal "$user")'"`" ]
     then
-        $PSQL -c "CREATE USER $user WITH PASSWORD '$passwd' NOCREATEDB NOCREATEUSER;" $users_db
+        quoted_user=`sql_quote_ident "$user"`
+        escaped_passwd=`sql_escape_literal "$passwd"`
+        $PSQL -d "$users_db" -c "CREATE ROLE $quoted_user WITH LOGIN PASSWORD '$escaped_passwd' NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT;"
     fi
 }
 
 drop() {
-    [ -n "`$PSQL -l | grep $users_db`" ] && $DROPDB $users_db
+    [ -n "`$PSQL -l | grep -F "$users_db"`" ] && $DROPDB "$users_db"
 }
 
 dump() {
-    if [ -n "`$PSQL -l | grep $users_db`" ]; then
+    if [ -n "`$PSQL -l | grep -F "$users_db"`" ]; then
         if [ -n "$1" ]; then
-    	    $DUMP $users_db > "$1"
+    	    $DUMP "$users_db" > "$1"
         else
-    	    $DUMP $users_db
+    	    $DUMP "$users_db"
         fi
     fi
 }
@@ -61,7 +76,7 @@ dump() {
 restore() {
     if [ -s "$1" ]; then
         create
-        $PSQL -c "\i $1" $users_db
+        $PSQL -c "\i $1" "$users_db"
     fi
 }
 
@@ -85,4 +100,3 @@ case "$1" in
 	usage
 	;;
 esac
-
