@@ -227,21 +227,47 @@ void fill_buff_random(unsigned short uin, char *buff, unsigned short length)
 /**************************************************************************/
 int sys_select(int maxfd, fd_set *fds,struct timeval *tval)
 {
-  struct pollfd pfd[256];
+  struct pollfd *pfd;
   int i;
   int maxpoll;
   int timeout;
   int pollrtn;
 
+  if ((maxfd < 0) || (maxfd > FD_SETSIZE))
+  {
+    DEBUG(0, ("Error: sys_select maxfd out of range (%d, FD_SETSIZE=%d)\n", maxfd, FD_SETSIZE));
+    errno = EINVAL;
+    return -1;
+  }
+
   maxpoll = 0;
   for( i = 0; i < maxfd; i++)
   {
     if(FD_ISSET(i,fds))
+      maxpoll++;
+  }
+
+  pfd = NULL;
+  if (maxpoll > 0)
+  {
+    pfd = (struct pollfd *)malloc(maxpoll * sizeof(struct pollfd));
+    if (pfd == NULL)
     {
-      struct pollfd *pfdp = &pfd[maxpoll++];
-      pfdp->fd = i;
-      pfdp->events = POLLIN;
-      pfdp->revents = 0;
+      DEBUG(0, ("Error: sys_select failed to allocate pollfd array (%d entries)\n", maxpoll));
+      errno = ENOMEM;
+      return -1;
+    }
+
+    maxpoll = 0;
+    for( i = 0; i < maxfd; i++)
+    {
+      if(FD_ISSET(i,fds))
+      {
+        struct pollfd *pfdp = &pfd[maxpoll++];
+        pfdp->fd = i;
+        pfdp->events = POLLIN;
+        pfdp->revents = 0;
+      }
     }
   }
 
@@ -250,7 +276,7 @@ int sys_select(int maxfd, fd_set *fds,struct timeval *tval)
   errno = 0;
   do
   {
-     pollrtn = poll( &pfd[0], maxpoll, timeout);
+     pollrtn = (maxpoll > 0) ? poll(pfd, maxpoll, timeout) : poll(NULL, 0, timeout);
   }
   while (pollrtn<0 && errno == EINTR);
 
@@ -259,6 +285,9 @@ int sys_select(int maxfd, fd_set *fds,struct timeval *tval)
   for( i = 0; i < maxpoll; i++)
     if( pfd[i].revents & POLLIN )
       FD_SET(pfd[i].fd,fds);
+
+  if (pfd != NULL)
+    free(pfd);
 
   return pollrtn;
 }
@@ -863,4 +892,3 @@ void random_fill(char *buffer, int size)
       sbuff[i] = (unsigned short)rand();
    }
 }
-
