@@ -335,7 +335,9 @@ void execute_rule_mail(struct rule_node *rule, unsigned short atype,
          if (rpipe != NULL)
          {
 	    fprintf(rpipe, "To: %s\n", rule->string_1);
-            fprintf(rpipe, subs_buf);
+            /* Template-expanded content may contain '%' and must never be
+             * used as a format string. */
+            fputs(subs_buf, rpipe);
             fflush(rpipe);
             fclose(rpipe);
 	    free(subs_buf);
@@ -395,7 +397,6 @@ char *action2string(int action)
 
    return (actionBuf);
 }
-
 
 
 
